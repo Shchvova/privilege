@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Picture of Privileged</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            margin: 10px 0 0 0;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .questions-section, .chart-section, .summary-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-section, .summary-section {
+            display: none;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .chart-section.visible, .summary-section.visible {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .question-group {
+            margin-bottom: 35px;
+            padding-bottom: 25px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .question-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .question-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .question-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+
+        .current-question {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .question-counter {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 10px;
+        }
+
+        .current-question-title {
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 30px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option {
+            padding: 15px 20px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .option:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .option.selected {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+            transform: translateY(-1px);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .chart-title {
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .legend {
+            text-align: center;
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 15px;
+        }
+
+        .progress-indicator {
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .progress-text {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar {
+            background: #e2e8f0;
+            border-radius: 5px;
+            height: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.3s ease;
+        }
+
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .nav-button {
+            padding: 12px 24px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #4a5568;
+            transition: all 0.3s ease;
+        }
+
+        .nav-button:hover:not(:disabled) {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .nav-button.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .summary-dimension {
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .summary-answer {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Picture of Privileged</h1>
+        <p>An interactive assessment to visualize systemic advantages and disadvantages</p>
+    </div>
+
+    <div class="main-content">
+        <div class="questions-section" id="questionsSection">
+            <div class="progress-indicator" id="progressIndicator">
+                <div class="progress-text">Assessment Progress</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="current-question">
+                <div class="question-counter" id="questionCounter"></div>
+                <div class="current-question-title" id="currentQuestionTitle"></div>
+                <div class="options-container" id="optionsContainer"></div>
+                <div class="navigation-buttons">
+                    <button class="nav-button" id="prevButton" onclick="previousQuestion()">Previous</button>
+                    <button class="nav-button primary" id="nextButton" onclick="nextQuestion()" disabled>Next</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="summary-section" id="summarySection">
+            <div class="chart-title">Your Responses Summary</div>
+            <div id="summaryContent"></div>
+        </div>
+
+        <div class="chart-section" id="chartSection">
+            <div class="chart-title">Your Privilege Profile</div>
+            <div class="chart-container">
+                <canvas id="privilegeChart"></canvas>
+            </div>
+            <div class="legend">
+                Higher values indicate greater systemic advantages
+            </div>
+            <div class="share-section" id="shareSection" style="display: none;">
+                <div style="text-align: center; margin-top: 30px; padding: 20px; background: #f8fafc; border-radius: 10px;">
+                    <h3 style="margin: 0 0 15px 0; color: #4a5568;">Share Your Results</h3>
+                    <p style="margin: 0 0 15px 0; color: #64748b; font-size: 0.9rem;">Copy this link to share your
+                        privilege assessment results:</p>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="shareLink" readonly
+                               style="flex: 1; padding: 10px; border: 2px solid #e2e8f0; border-radius: 5px; background: white; font-size: 0.9rem;"/>
+                        <label for="shareLink">
+                            <button onclick="copyShareLink()"
+                                    style="padding: 10px 20px; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">
+                                Copy
+                            </button>
+                        </label>
+                    </div>
+                    <div id="copyStatus"
+                         style="margin-top: 10px; font-size: 0.8rem; color: #10b981; opacity: 0; transition: opacity 0.3s;">
+                        Link copied to clipboard!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Wait for Chart.js to load
+    document.addEventListener('DOMContentLoaded', function () {
+        // Check if Chart is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js failed to load');
+            return;
+        }
+
+        // Questions data structure
+        const questions = [
+                {
+                    "id": "ethnicity",
+                    "title": "Race / Ethnicity",
+                    "options": [
+                        {"text": "Racial/ethnic majority or socially dominant group (ethnic majority in own country)."},
+                        {"text": "Recognized minority but one with some social capital, positive stereotypes, or partial assimilation"},
+                        {"text": "Racialized or stigmatized group, subject to systemic discrimination"},
+                        {"text": "Indigenous, stateless, or communities facing structural erasure, violence, or severe exclusion"}
+                    ]
+                },
+                {
+                    "id": "gender",
+                    "title": "Gender",
+                    "options": [
+                        {"text": "Cisgender men"},
+                        {"text": "Cisgender women in contexts with partial gender equality"},
+                        {"text": "Trans, nonbinary, or gender non-conforming people, in accepting society"},
+                        {"text": "Cisgender women in patriarchal society"},
+                        {"text": "Intersections of marginalized gender identity with race/class"},
+                        {"text": "Prosecuted gender identity, risking violence or imprisonment"}
+                    ]
+                },
+                {
+                    "id": "sexual_orientation",
+                    "title": "Sexual Orientation",
+                    "options": [
+                        {"text": "Heterosexual"},
+                        {"text": "Bisexual or queer but in tolerant/liberal environments"},
+                        {"text": "Openly LGBTQ+ in less accepting societies, facing stigma or discrimination"},
+                        {"text": "LGBTQ+ in criminalizing regimes, risking violence or imprisonment"}
+                    ]
+                },
+                {
+                    "id": "class",
+                    "title": "Socioeconomic Status / Class",
+                    "options": [
+                        {"text": "Wealthy, inherited wealth, elite education, financial security"},
+                        {"text": "Stable middle class, access to education, job security"},
+                        {"text": "Working poor, precarious jobs, limited upward mobility"},
+                        {"text": "Extreme poverty, homelessness, lack of basic needs met"}
+                    ]
+                },
+                {
+                    "id": "ability",
+                    "title": "Ability / Disability",
+                    "options": [
+                        {"text": "Able-bodied, neurotypical, good health, no impairments"},
+                        {"text": "Mild or invisible disabilities with accommodations available"},
+                        {"text": "Visible disabilities or chronic illness with systemic barriers"},
+                        {"text": "Severe disabilities in environments with no accessibility or support"}
+                    ]
+                },
+                {
+                    "id": "religion",
+                    "title": "Religion",
+                    "options": [
+                        {"text": "Member of majority/dominant religion in one’s country"},
+                        {"text": "Minority religion but socially tolerated (e.g., 'accepted' denominations)"},
+                        {"text": "Minority religions subject to prejudice or suspicion"},
+                        {"text": "Persecuted or criminalized religious minorities; atheists in strongly religious states"}
+                    ]
+                },
+                {
+                    "id": "nationality",
+                    "title": "Nationality / Citizenship",
+                    "options": [
+                        {"text": "Citizen of powerful, wealthy, visa-privileged nations (e.g., EU, U.S., Canada, Japan)"},
+                        {"text": "Citizen of stable countries with moderate international respect"},
+                        {"text": "Citizens of poorer or politically unstable nations with restricted mobility"},
+                        {"text": "Stateless, refugee, undocumented — facing legal insecurity"}
+                    ]
+                },
+                {
+                    "id": "language",
+                    "title": "Language",
+                    "options": [
+                        {"text": "Native speaker of dominant/global language (e.g., English)"},
+                        {"text": "Bilingual in global language but with an accent or secondary status"},
+                        {"text": "Local or minority language speaker with limited recognition"},
+                        {"text": "Speakers of endangered, suppressed, or stigmatized languages"}
+                    ]
+                },
+                {
+                    "id": "age",
+                    "title": "Age",
+                    "options": [
+                        {"text": "Prime working age (30–50), perceived as competent, reliable"},
+                        {"text": "Young adult (20s) with potential but less authority"},
+                        {"text": "Elderly, facing ageism, exclusion from workforce"},
+                        {"text": "Very young/old without support, often voiceless in decision-making"}
+                    ]
+                },
+                {
+                    "id": "geography",
+                    "title": "Geography / Location",
+                    "options": [
+                        {"text": "Urban centers in developed nations with infrastructure, opportunities"},
+                        {"text": "Small towns or rural areas in developed regions"},
+                        {"text": "Rural/remote areas in developing countries, limited access"},
+                        {"text": "Conflict zones, occupied territories, climate disaster regions"}
+                    ]
+                },
+                {
+                    "id": "education",
+                    "title": "Education",
+                    "options": [
+                        {"text": "Elite universities, advanced degrees, networks"},
+                        {"text": "Standard higher education (college/university)"},
+                        {"text": "Limited schooling, vocational training only"},
+                        {"text": "No formal education, illiteracy"}
+                    ]
+                },
+                {
+                    "id": "appearance",
+                    "title": "Appearance",
+                    "options": [
+                        {"text": "Conventionally attractive, fitting dominant beauty norms, slim, tall"},
+                        {"text": "Average looks, neutral appearance, socially 'acceptable'"},
+                        {"text": "Diverging from beauty standards (weight stigma, scarring, height)"},
+                        {"text": "Severe disfigurement or traits stigmatized in local culture"}
+                    ]
+                }
+            ];
+
+        // Reprocess questions:
+        questions.map( question => {
+            for (let j = 0; j < question.options.length; j++) {
+                const option = question.options[j];
+                if (isNaN(option.value)) {
+                    option.value = 1 - 0.9*j/(question.options.length-1);
+                }
+            }
+        });
+        console.log(questions);
+
+        // Application state
+        let currentQuestionIndex = 0;
+        let responses = {};
+        let chart = null;
+        let isLoadedFromHash = false;
+
+        // Initialize the application
+        function init() {
+            // Check if there's data in the URL hash
+            loadFromHash();
+            showCurrentQuestion();
+            updateProgress();
+            updateNavigationButtons();
+        }
+
+        function loadFromHash() {
+            const hash = window.location.hash;
+            if (hash && hash.length > 1) {
+                try {
+                    // Remove the # and decode base64
+                    const encodedData = hash.substring(1);
+                    const decodedData = atob(encodedData);
+                    const loadedResponses = JSON.parse(decodedData);
+
+                    // Validate and load responses
+                    loadedResponses.forEach(response => {
+                        const questionId = response[0];
+                        const optionIndex = response[1];
+                        const question = questions.find(q => q.id === questionId);
+                        if (question && optionIndex >= 0 && optionIndex < question.options.length) {
+                            const option = question.options[optionIndex];
+                            responses[questionId] = {
+                                value: option.value,
+                                text: option.text,
+                                optionIndex: optionIndex
+                            };
+                        }
+                    });
+
+                    isLoadedFromHash = true;
+
+                    // Find first unanswered question or go to results if all answered
+                    const answeredCount = Object.keys(responses).length;
+                    if (answeredCount === questions.length) {
+                        // All questions answered, go directly to results
+                        currentQuestionIndex = questions.length;
+                        setTimeout(() => showResults(), 100);
+                    } else {
+                        // Find first unanswered question
+                        currentQuestionIndex = questions.findIndex(q => !responses[q.id]);
+                        if (currentQuestionIndex === -1) currentQuestionIndex = 0;
+                    }
+
+                } catch (e) {
+                    console.error('Error loading data from hash:', e);
+                    // Invalid hash, start fresh
+                    window.location.hash = '';
+                    isLoadedFromHash = false;
+                }
+            }
+        }
+
+        function generateShareData() {
+            const shareData = Object.keys(responses).map(questionId => {
+                const response = responses[questionId];
+                return [questionId, response.optionIndex];
+            });
+
+            return btoa(JSON.stringify(shareData));
+        }
+
+        function generateShareLink() {
+            const baseUrl = window.location.href.split('#')[0];
+            const encodedData = generateShareData();
+            return `${baseUrl}#${encodedData}`;
+        }
+
+        function copyShareLink() {
+            const shareLink = document.getElementById('shareLink');
+            shareLink.select();
+            shareLink.setSelectionRange(0, 99999); // For mobile devices
+
+            try {
+                document.execCommand('copy');
+                showCopyStatus();
+            } catch (err) {
+                // Fallback for modern browsers
+                navigator.clipboard.writeText(shareLink.value).then(() => {
+                    showCopyStatus();
+                }).catch(() => {
+                    console.error('Could not copy link');
+                });
+            }
+        }
+
+        function showCopyStatus() {
+            const status = document.getElementById('copyStatus');
+            status.style.opacity = '1';
+            setTimeout(() => {
+                status.style.opacity = '0';
+            }, 2000);
+        }
+
+        function showCurrentQuestion() {
+            const question = questions[currentQuestionIndex];
+            const questionCounter = document.getElementById('questionCounter');
+            const questionTitle = document.getElementById('currentQuestionTitle');
+            const optionsContainer = document.getElementById('optionsContainer');
+
+            questionCounter.textContent = `Question ${currentQuestionIndex + 1} of ${questions.length}`;
+            questionTitle.textContent = question.title;
+
+            // Clear previous options
+            optionsContainer.innerHTML = '';
+
+            // Create options
+            question.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'option';
+                optionElement.textContent = option.text;
+                optionElement.dataset.value = option.value;
+                optionElement.dataset.text = option.text;
+
+                // Check if this option was previously selected
+                if (responses[question.id] && responses[question.id].optionIndex === index) {
+                    optionElement.classList.add('selected');
+                }
+
+                optionElement.addEventListener('click', function () {
+                    selectOption(this, question.id);
+                });
+
+                optionsContainer.appendChild(optionElement);
+            });
+        }
+
+        function selectOption(selectedElement, questionId) {
+            // Remove previous selection
+            const options = selectedElement.parentNode.querySelectorAll('.option');
+            options.forEach(opt => opt.classList.remove('selected'));
+
+            // Add selection to clicked option
+            selectedElement.classList.add('selected');
+
+            // Find option index
+            const optionIndex = Array.from(options).indexOf(selectedElement);
+
+            // Store response with option index
+            responses[questionId] = {
+                value: parseFloat(selectedElement.dataset.value),
+                text: selectedElement.dataset.text,
+                optionIndex: optionIndex
+            };
+
+            updateNavigationButtons();
+        }
+
+        function updateNavigationButtons() {
+            const prevButton = document.getElementById('prevButton');
+            const nextButton = document.getElementById('nextButton');
+            const currentQuestion = questions[currentQuestionIndex];
+
+            prevButton.disabled = currentQuestionIndex === 0;
+
+            // Enable next button if current question is answered
+            const isAnswered = responses[currentQuestion.id] !== undefined;
+            nextButton.disabled = !isAnswered;
+
+            // Change next button text on last question
+            if (currentQuestionIndex === questions.length - 1) {
+                nextButton.textContent = isAnswered ? 'View Results' : 'Complete';
+            } else {
+                nextButton.textContent = 'Next';
+            }
+        }
+
+        function nextQuestion() {
+            if (currentQuestionIndex < questions.length - 1) {
+                currentQuestionIndex++;
+                showCurrentQuestion();
+                updateProgress();
+                updateNavigationButtons();
+            } else {
+                // All questions completed
+                showResults();
+            }
+        }
+
+        function previousQuestion() {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                showCurrentQuestion();
+                updateProgress();
+                updateNavigationButtons();
+            }
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+        }
+
+        function showResults() {
+            // Hide questions section
+            document.getElementById('questionsSection').style.display = 'none';
+
+            // Show summary
+            showSummary();
+
+            // Show chart
+            showChart();
+        }
+
+        function showSummary() {
+            const summarySection = document.getElementById('summarySection');
+            const summaryContent = document.getElementById('summaryContent');
+
+            summaryContent.innerHTML = '';
+
+            questions.forEach(question => {
+                const response = responses[question.id];
+                if (response) {
+                    const summaryItem = document.createElement('div');
+                    summaryItem.className = 'summary-item';
+                    summaryItem.innerHTML = `
+                            <div class="summary-dimension">${question.title}</div>
+                            <div class="summary-answer">${response.text}</div>
+                        `;
+                    summaryContent.appendChild(summaryItem);
+                }
+            });
+
+            summarySection.classList.add('visible');
+        }
+
+        function showChart() {
+            const chartSection = document.getElementById('chartSection');
+            chartSection.classList.add('visible');
+
+            // Initialize chart if not already created
+            if (!chart) {
+                initChart();
+            }
+
+            updateChart();
+
+            // Show share section and generate link
+            const shareSection = document.getElementById('shareSection');
+            const shareLink = document.getElementById('shareLink');
+            shareLink.value = generateShareLink();
+            shareSection.style.display = 'block';
+
+            // Update URL hash with current responses
+            window.location.hash = generateShareData();
+
+            // Smooth scroll to chart
+            setTimeout(() => {
+                chartSection.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }, 200);
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('privilegeChart').getContext('2d');
+
+            // Create labels and default data based on questions array
+            const labels = questions.map(q => q.title);
+            const defaultData = questions.map(() => 0.5);
+
+            const chartData = {
+                labels: labels,
+                datasets: [{
+                    label: 'Privilege Score',
+                    data: defaultData,
+                    backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                    borderColor: 'rgba(102, 126, 234, 0.8)',
+                    borderWidth: 2,
+                    pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    tension: 0.4
+                }]
+            };
+
+            chart = new Chart(ctx, {
+                type: 'radar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 1,
+                            min: 0,
+                            ticks: {
+                                stepSize: 0.2,
+                                display: false
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                },
+                                color: '#4a5568'
+                            }
+                        }
+                    },
+                    elements: {
+                        line: {
+                            tension: 0.4
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            if (chart) {
+                // Update chart data with actual responses
+                const dataValues = questions.map(question => {
+                    return responses[question.id] ? responses[question.id].value : 0.5;
+                });
+
+                chart.data.datasets[0].data = dataValues;
+                chart.update();
+            }
+        }
+
+        // Make functions global for button onclick handlers
+        window.nextQuestion = nextQuestion;
+        window.previousQuestion = previousQuestion;
+        window.copyShareLink = copyShareLink;
+
+        // Initialize the application
+        init();
+    });
+</script>
+</body>
+</html>
